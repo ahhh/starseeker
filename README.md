@@ -46,4 +46,4 @@ Push to `main`, then in the repo go to **Settings → Pages** and deploy from th
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE)
