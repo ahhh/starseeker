@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star Seeker — A field guide to tonight's sky</title>
+<meta name="description" content="Enter a date and location to see which constellations are visible tonight, where to look, and why they're interesting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#0a0a1a;          /* page ground, matches logo corners */
+  --deep:#12122e;         /* raised surfaces */
+  --plate:#0d0d22;        /* atlas plate ground */
+  --starlight:#e9edff;    /* primary text */
+  --dim:#9aa3c7;          /* secondary text */
+  --glow:#8fb8ff;         /* star-line blue from the logo */
+  --nebula:#a08fd0;       /* milky-way violet */
+  --ember:#e0956b;        /* horizon glow — used only for time & moon */
+  --line:rgba(143,184,255,.22);
+  --easy:#8fd8a8; --moderate:#e5c97a; --hard:#e09a8f;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+body{
+  background:var(--sky);
+  color:var(--starlight);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:16px;line-height:1.6;
+  overflow-x:hidden;
+}
+::selection{background:rgba(143,184,255,.35)}
+a{color:var(--glow)}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- starfield ---------- */
+#starfield{position:fixed;inset:0;z-index:-1;pointer-events:none}
+
+/* ---------- hero ---------- */
+.hero{position:relative;text-align:center}
+.hero img{
+  display:block;width:100%;max-height:88vh;object-fit:cover;object-position:center 30%;
+}
+.hero::after{
+  content:"";position:absolute;inset:auto 0 0 0;height:45%;
+  background:linear-gradient(to bottom,transparent,var(--sky));
+}
+.hero-tag{
+  position:relative;margin:-3.2rem auto 0;z-index:1;
+  font-family:"Cormorant",serif;font-style:italic;font-weight:500;
+  font-size:clamp(1.3rem,2.6vw,1.75rem);color:var(--dim);
+  letter-spacing:.04em;
+}
+.hero-cue{
+  position:relative;z-index:1;display:inline-block;margin-top:1.6rem;
+  color:var(--glow);text-decoration:none;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.32em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:999px;padding:.7rem 1.6rem;
+  transition:background .25s,border-color .25s;
+}
+.hero-cue:hover,.hero-cue:focus-visible{background:rgba(143,184,255,.1);border-color:var(--glow)}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1060px;margin:0 auto;padding:0 1.25rem}
+section{padding:4.5rem 0 1rem}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--nebula);margin-bottom:.75rem;
+}
+h2{
+  font-family:"Cormorant",serif;font-weight:600;
+  font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.15;letter-spacing:.01em;
+}
+
+/* ---------- observation form ---------- */
+.obs-form{
+  margin-top:2rem;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,var(--deep),var(--plate));
+  padding:1.75rem;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;align-items:end;
+}
+.field{display:flex;flex-direction:column;gap:.45rem}
+.field label{
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim);
+}
+.field input,.field select{
+  background:rgba(10,10,26,.7);color:var(--starlight);
+  border:1px solid var(--line);border-radius:8px;
+  font-family:"IBM Plex Mono",monospace;font-size:.95rem;
+  padding:.6rem .75rem;width:100%;
+  color-scheme:dark;
+}
+.field input:focus-visible,.field select:focus-visible,button:focus-visible,.hero-cue:focus-visible{
+  outline:2px solid var(--glow);outline-offset:2px;
+}
+.form-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.9rem;align-items:center}
+.btn{
+  cursor:pointer;border-radius:8px;font-family:"IBM Plex Mono",monospace;
+  font-size:.82rem;letter-spacing:.18em;text-transform:uppercase;padding:.8rem 1.6rem;
+  transition:background .2s,border-color .2s,transform .15s;
+}
+.btn-primary{
+  background:rgba(143,184,255,.14);color:var(--glow);border:1px solid var(--glow);
+}
+.btn-primary:hover{background:rgba(143,184,255,.26)}
+.btn-ghost{
+  background:transparent;color:var(--dim);border:1px solid var(--line);
+}
+.btn-ghost:hover{color:var(--starlight);border-color:var(--dim)}
+.form-note{font-size:.8rem;color:var(--dim);grid-column:1/-1;margin-top:-.4rem}
+.field.place{grid-column:span 2;position:relative}
+.suggestions{
+  position:absolute;top:100%;left:0;right:0;z-index:6;margin-top:.35rem;display:none;
+  background:var(--deep);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  box-shadow:0 16px 40px rgba(4,4,12,.65);
+}
+.suggestions.show{display:block}
+.suggestions button{
+  display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+  color:var(--starlight);font-family:inherit;font-size:.88rem;padding:.6rem .9rem;
+}
+.suggestions button:hover,.suggestions button:focus-visible{background:rgba(143,184,255,.12);outline:none}
+.suggestions .meta{color:var(--dim);font-size:.78rem;margin-left:.45rem}
+.form-error{grid-column:1/-1;color:var(--hard);font-size:.88rem;display:none}
+.form-error.show{display:block}
+
+/* ---------- sky conditions ---------- */
+.conditions{
+  margin-top:1.5rem;display:none;flex-wrap:wrap;gap:1rem;align-items:center;
+  font-family:"IBM Plex Mono",monospace;font-size:.82rem;color:var(--dim);
+}
+.conditions.show{display:flex}
+.cond-chip{
+  border:1px solid var(--line);border-radius:999px;padding:.45rem 1rem;
+  display:inline-flex;align-items:center;gap:.5rem;
+}
+.cond-chip .moon-glyph{color:var(--ember)}
+.moon-warning{color:var(--ember)}
+
+/* ---------- results ---------- */
+.results-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-top:3.5rem}
+.results-count{font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.empty-state{
+  margin-top:1.75rem;border:1px dashed var(--line);border-radius:14px;
+  padding:3rem 2rem;text-align:center;color:var(--dim);
+  font-family:"Cormorant",serif;font-style:italic;font-size:1.25rem;
+}
+.grid{
+  margin-top:1.75rem;display:grid;gap:1.25rem;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+}
+.card{
+  text-align:left;cursor:pointer;color:inherit;font:inherit;
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,var(--deep),var(--plate));
+  transition:border-color .25s,transform .25s,box-shadow .25s;
+  display:flex;flex-direction:column;
+}
+.card:hover{border-color:var(--glow);transform:translateY(-3px);box-shadow:0 12px 40px rgba(143,184,255,.12)}
+.card.reveal{animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.card-chart{display:block;width:100%;height:170px;background:radial-gradient(120% 120% at 50% 0%,#151538 0%,var(--plate) 70%)}
+.card-chart svg{width:100%;height:100%}
+.card-body{padding:1.1rem 1.25rem 1.3rem;display:flex;flex-direction:column;gap:.55rem;flex:1}
+.card h3{
+  font-family:"Cormorant",serif;font-weight:600;font-size:1.55rem;letter-spacing:.02em;
+  display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;
+}
+.chip{
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
+  border-radius:999px;padding:.22rem .7rem;border:1px solid;white-space:nowrap;
+}
+.chip.easy{color:var(--easy);border-color:var(--easy)}
+.chip.moderate{color:var(--moderate);border-color:var(--moderate)}
+.chip.hard{color:var(--hard);border-color:var(--hard)}
+.card-data{
+  font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--glow);letter-spacing:.06em;
+}
+.card-data .at{color:var(--ember)}
+.card-spot{font-size:.9rem;color:var(--dim);flex:1}
+.card-more{
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--nebula);margin-top:.35rem;
+}
+.hidden-list{margin-top:2.25rem;color:var(--dim);font-size:.88rem}
+.hidden-list b{color:var(--starlight);font-weight:500}
+
+/* ---------- plate modal ---------- */
+dialog.plate-modal{
+  background:var(--plate);color:var(--starlight);
+  border:1px solid var(--line);border-radius:16px;
+  padding:0;max-width:min(920px,calc(100vw - 2rem));width:100%;
+  max-height:calc(100vh - 2rem);
+}
+dialog.plate-modal::backdrop{background:rgba(4,4,12,.82);backdrop-filter:blur(4px)}
+.plate-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:0}
+.plate-figure{padding:1.5rem;border-right:1px solid var(--line)}
+.plate-figure svg{display:block;width:100%;height:auto}
+.plate-details{padding:2rem 2rem 2.25rem;display:flex;flex-direction:column;gap:1.05rem;overflow-y:auto;max-height:calc(100vh - 2rem)}
+.plate-no{
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--nebula);
+}
+.plate-details h3{font-family:"Cormorant",serif;font-weight:600;font-size:2.3rem;line-height:1.05}
+.plate-stats{
+  display:grid;grid-template-columns:repeat(3,auto);gap:.4rem 1.6rem;justify-content:start;
+  font-family:"IBM Plex Mono",monospace;font-size:.92rem;
+}
+.plate-stats .k{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.plate-stats .v{color:var(--glow)}
+.plate-stats .v.time{color:var(--ember)}
+.plate-sec .k{
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--nebula);display:block;margin-bottom:.35rem;
+}
+.plate-sec p{font-size:.95rem;color:var(--starlight)}
+.plate-sec.lore p{
+  font-family:"Cormorant",serif;font-style:italic;font-size:1.22rem;line-height:1.5;color:#cdd5f5;
+}
+.guide-stars{display:flex;flex-wrap:wrap;gap:.45rem}
+.guide-stars span{
+  font-family:"IBM Plex Mono",monospace;font-size:.74rem;color:var(--starlight);
+  border:1px solid var(--line);border-radius:999px;padding:.28rem .8rem;
+}
+.plate-close{
+  position:absolute;top:.9rem;right:.9rem;
+  background:rgba(10,10,26,.7);border:1px solid var(--line);color:var(--dim);
+  width:2.4rem;height:2.4rem;border-radius:50%;cursor:pointer;font-size:1.1rem;line-height:1;
+}
+.plate-close:hover{color:var(--starlight);border-color:var(--dim)}
+
+/* ---------- footer ---------- */
+footer{
+  margin-top:5rem;padding:2.5rem 0 3rem;border-top:1px solid var(--line);
+  text-align:center;color:var(--dim);font-size:.82rem;
+}
+footer .const-line{font-family:"IBM Plex Mono",monospace;letter-spacing:.3em;color:var(--nebula);font-size:.68rem;margin-bottom:.8rem}
+
+@media (max-width:860px){
+  .obs-form{grid-template-columns:1fr 1fr}
+  .plate-inner{grid-template-columns:1fr}
+  .plate-figure{border-right:none;border-bottom:1px solid var(--line)}
+  .plate-details{max-height:none}
+}
+@media (max-width:520px){
+  .obs-form{grid-template-columns:1fr}
+  .field.place{grid-column:1/-1}
+  .hero-tag{margin-top:-1.6rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="starfield" aria-hidden="true"></canvas>
+
+<header class="hero">
+  <h1 class="visually-hidden">Star Seeker</h1>
+  <img src="starseeker_logo.png" alt="Star Seeker — the name drawn as glowing constellations over a mountain observatory at dusk" fetchpriority="high">
+  <p class="hero-tag">A field guide to tonight's sky.</p>
+  <div><a class="hero-cue" href="#observe">Begin observing ↓</a></div>
+</header>
+
+<main class="wrap">
+  <section id="observe" aria-labelledby="observe-h">
+    <p class="eyebrow">Observation</p>
+    <h2 id="observe-h">Where will you be, and when?</h2>
+
+    <form class="obs-form" id="obsForm" novalidate>
+      <div class="field">
+        <label for="date">Date</label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="field place">
+        <label for="place">Location</label>
+        <input type="text" id="place" placeholder="City or place — e.g. Denver" autocomplete="off" spellcheck="false">
+        <div class="suggestions" id="suggestions" role="listbox" aria-label="Matching places"></div>
+      </div>
+      <div class="field">
+        <label for="window">Viewing window</label>
+        <select id="window">
+          <option value="all">All night</option>
+          <option value="evening">Evening · dusk–midnight</option>
+          <option value="late">Late night · 11 pm–3 am</option>
+          <option value="predawn">Pre-dawn · 2 am–dawn</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="lat">Latitude</label>
+        <input type="number" id="lat" step="any" min="-90" max="90" placeholder="e.g. 39.74">
+      </div>
+      <div class="field">
+        <label for="lon">Longitude</label>
+        <input type="number" id="lon" step="any" min="-180" max="180" placeholder="e.g. −104.99">
+      </div>
+      <p class="form-error" id="formError" role="alert"></p>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Chart the sky</button>
+        <button type="button" class="btn btn-ghost" id="geoBtn">Use my location</button>
+      </div>
+      <p class="form-note">Type a place name and its coordinates are looked up for you (Open-Meteo geocoder) — or enter latitude and longitude directly. Times are shown in your device's local time zone; constellations count as visible above 20° altitude in true darkness.</p>
+    </form>
+
+    <div class="conditions" id="conditions" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="results-h" id="results-section">
+    <div class="results-head">
+      <div>
+        <p class="eyebrow">Tonight's plates</p>
+        <h2 id="results-h">Visible constellations</h2>
+      </div>
+      <p class="results-count" id="resultsCount"></p>
+    </div>
+    <div class="empty-state" id="emptyState">Enter a date and location above, and the night's constellations will be drawn here.</div>
+    <div class="grid" id="grid"></div>
+    <p class="hidden-list" id="hiddenList"></p>
+  </section>
+</main>
+
+<dialog class="plate-modal" id="plateModal" aria-labelledby="plateName">
+  <button class="plate-close" id="plateClose" aria-label="Close plate">✕</button>
+  <div class="plate-inner">
+    <figure class="plate-figure" id="plateFigure"></figure>
+    <div class="plate-details" id="plateDetails"></div>
+  </div>
+</dialog>
+
+<footer>
+  <p class="const-line">✦ · ✦ ✦ · ✦ · ✦ ✦ ✦</p>
+  <p>Star Seeker charts eighteen anchor constellations from your latitude, longitude, and local sidereal time.<br>Computed in your browser — no data leaves this page.</p>
+</footer>
+
+<script>
+"use strict";
+/* ============================================================
+   Star Seeker — single-file constellation guide
+   Astronomy: local sidereal time → hour angle → alt/az,
+   low-precision solar position for darkness, synodic moon phase.
+   ============================================================ */
+
+const D2R = Math.PI/180, R2D = 180/Math.PI;
+const norm360 = d => ((d % 360) + 360) % 360;
+
+/* ---------- constellation database ----------
+   stars: [name, RA hours (J2000), Dec degrees, visual magnitude]
+   lines: index pairs into stars, the classic stick figure        */
+const CONSTELLATIONS = [
+{id:"orion",name:"Orion",season:"Winter",
+ stars:[["Betelgeuse",5.919,7.407,0.45],["Bellatrix",5.418,6.350,1.64],["Rigel",5.242,-8.202,0.18],["Saiph",5.796,-9.670,2.07],["Alnitak",5.679,-1.943,1.88],["Alnilam",5.604,-1.202,1.69],["Mintaka",5.533,-0.299,2.25],["Meissa",5.585,9.934,3.39]],
+ lines:[[0,4],[1,6],[4,5],[5,6],[4,3],[6,2],[2,3],[0,7],[1,7]],
+ guide:["Betelgeuse","Rigel","Alnilam"],
+ spotting:"Look for three bright stars in a short, straight line — Orion's Belt. Red Betelgeuse marks one shoulder, blue-white Rigel the opposite foot.",
+ lore:"The great hunter of Greek myth, placed in the sky opposite Scorpius, the creature sent to slay him — the two are never above the horizon together."},
+{id:"uma",name:"Ursa Major",season:"Spring",
+ stars:[["Dubhe",11.062,61.751,1.79],["Merak",11.031,56.383,2.37],["Phecda",11.897,53.695,2.44],["Megrez",12.257,57.033,3.31],["Alioth",12.900,55.960,1.77],["Mizar",13.399,54.925,2.27],["Alkaid",13.792,49.313,1.86]],
+ lines:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],
+ guide:["Dubhe","Alioth","Alkaid"],
+ spotting:"Find the Big Dipper: a bowl of four stars with a bent three-star handle. Sharp eyes can split Mizar from its faint companion Alcor in the handle.",
+ lore:"The Great Bear. In Greek telling, Callisto transformed and swung into the northern sky — which is why the bear circles the pole and never sets for most northern observers."},
+{id:"umi",name:"Ursa Minor",season:"Year-round",
+ stars:[["Polaris",2.530,89.264,1.98],["Yildun",17.537,86.586,4.36],["ε UMi",16.766,82.037,4.23],["ζ UMi",15.734,77.795,4.32],["Kochab",14.845,74.155,2.08],["Pherkad",15.345,71.834,3.05],["η UMi",16.291,75.755,4.95]],
+ lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]],
+ guide:["Polaris","Kochab"],
+ spotting:"Follow the two outer stars of the Big Dipper's bowl upward about five bowl-widths to Polaris, the tip of the Little Dipper's handle. Its altitude equals your latitude.",
+ lore:"The Little Bear carries Polaris, the North Star — the still point of the turning sky that navigators have steered by for centuries."},
+{id:"cas",name:"Cassiopeia",season:"Autumn",
+ stars:[["Caph",0.153,59.150,2.27],["Schedar",0.675,56.537,2.24],["Navi",0.945,60.717,2.47],["Ruchbah",1.430,60.235,2.68],["Segin",1.907,63.670,3.38]],
+ lines:[[0,1],[1,2],[2,3],[3,4]],
+ guide:["Schedar","Caph","Navi"],
+ spotting:"An unmistakable W (or M) of five stars set in the Milky Way, on the opposite side of Polaris from the Big Dipper.",
+ lore:"The vain queen of Aethiopia, condemned to wheel around the pole on her throne — hanging upside down half of every night as penance for her boasting."},
+{id:"cyg",name:"Cygnus",season:"Summer",
+ stars:[["Deneb",20.690,45.280,1.25],["Sadr",20.371,40.257,2.23],["Gienah",20.771,33.970,2.48],["Fawaris",19.749,45.131,2.87],["Albireo",19.512,27.960,3.05],["ζ Cyg",21.216,30.227,3.20],["ι Cyg",19.496,51.729,3.79]],
+ lines:[[0,1],[1,2],[2,5],[1,3],[3,6],[1,4]],
+ guide:["Deneb","Sadr","Albireo"],
+ spotting:"A large cross flying down the Milky Way — the Northern Cross. Brilliant Deneb marks the tail; Albireo, a gorgeous gold-and-blue double in a telescope, marks the head.",
+ lore:"The Swan — Zeus in disguise in one telling, or Orpheus placed near his lyre in another — gliding along the band of the summer Milky Way."},
+{id:"lyr",name:"Lyra",season:"Summer",
+ stars:[["Vega",18.616,38.784,0.03],["ζ Lyr",18.746,37.605,4.36],["δ Lyr",18.908,36.899,4.30],["Sulafat",18.982,32.690,3.25],["Sheliak",18.834,33.363,3.52],["ε Lyr",18.739,39.613,4.59]],
+ lines:[[0,1],[1,2],[2,3],[3,4],[4,1],[0,5]],
+ guide:["Vega","Sulafat","Sheliak"],
+ spotting:"Vega is the brightest star of the summer sky — hard to miss overhead. The rest of the Lyre is a small, neat parallelogram hanging just below it.",
+ lore:"The lyre of Orpheus, whose music charmed stones and briefly won Eurydice back from the underworld. The gods set the instrument among the stars."},
+{id:"aql",name:"Aquila",season:"Summer",
+ stars:[["Altair",19.846,8.868,0.76],["Tarazed",19.771,10.613,2.72],["Alshain",19.922,6.407,3.71],["δ Aql",19.425,3.115,3.36],["Okab",19.090,13.863,2.99],["θ Aql",20.188,-0.821,3.24],["λ Aql",19.106,-4.883,3.43]],
+ lines:[[1,0],[0,2],[0,3],[3,4],[3,6],[3,5]],
+ guide:["Altair","Tarazed"],
+ spotting:"Altair sits flanked by two dimmer stars in a tidy line — the eagle's head. With Vega and Deneb it forms the great Summer Triangle.",
+ lore:"The Eagle that carried Zeus's thunderbolts. In East Asian star lore Altair is the cowherd, separated from the weaver girl Vega by the river of the Milky Way."},
+{id:"sco",name:"Scorpius",season:"Summer",
+ stars:[["Antares",16.490,-26.432,1.06],["Acrab",16.091,-19.805,2.62],["Dschubba",16.006,-22.622,2.29],["π Sco",15.981,-26.114,2.89],["σ Sco",16.353,-25.593,2.88],["τ Sco",16.598,-28.216,2.82],["ε Sco",16.836,-34.293,2.29],["μ Sco",16.864,-38.047,3.00],["ζ Sco",16.910,-42.361,3.62],["η Sco",17.202,-43.239,3.33],["Sargas",17.622,-42.998,1.86],["κ Sco",17.708,-39.030,2.39],["Shaula",17.560,-37.104,1.62],["Lesath",17.513,-37.295,2.70]],
+ lines:[[1,2],[2,3],[2,4],[4,0],[0,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13]],
+ guide:["Antares","Shaula","Dschubba"],
+ spotting:"A long fishhook of stars low in the south, anchored by fiery-red Antares at the heart. The curved tail ends at the paired stinger stars Shaula and Lesath.",
+ lore:"The scorpion sent to kill Orion. The gods placed hunter and scorpion at opposite ends of the sky, so Orion sets in the west as Scorpius rises in the east."},
+{id:"sgr",name:"Sagittarius",season:"Summer",
+ stars:[["Kaus Australis",18.403,-34.385,1.85],["Kaus Media",18.350,-29.828,2.70],["Kaus Borealis",18.466,-25.421,2.81],["Alnasl",18.096,-30.424,2.99],["φ Sgr",18.762,-26.991,3.17],["Nunki",18.921,-26.297,2.02],["Ascella",19.043,-29.880,2.60],["τ Sgr",19.117,-27.670,3.32]],
+ lines:[[3,1],[1,0],[0,6],[6,4],[4,2],[2,1],[4,5],[5,7],[7,6]],
+ guide:["Kaus Australis","Nunki"],
+ spotting:"Forget the archer — look for the Teapot, low in the south: a lid, a spout, and a handle. The steam rising from the spout is the Milky Way toward the galaxy's center.",
+ lore:"The centaur archer, his arrow forever aimed at the heart of the Scorpion. The core of our galaxy lies just past the teapot's spout."},
+{id:"tau",name:"Taurus",season:"Winter",
+ stars:[["Aldebaran",4.599,16.509,0.85],["Elnath",5.438,28.608,1.68],["Tianguan",5.628,21.143,3.01],["θ² Tau",4.478,15.871,3.40],["γ Tau",4.330,15.628,3.65],["δ¹ Tau",4.383,17.543,3.77],["Ain",4.477,19.180,3.53],["λ Tau",4.011,12.490,3.47],["Alcyone",3.791,24.105,2.87]],
+ lines:[[2,0],[0,3],[3,4],[4,5],[5,6],[6,1],[4,7],[6,8]],
+ guide:["Aldebaran","Elnath","Alcyone"],
+ spotting:"A V of stars — the Hyades cluster — forms the bull's face, with orange Aldebaran as its glaring eye. The little dipper-shaped knot nearby is the Pleiades on the bull's shoulder.",
+ lore:"The Bull is one of the oldest constellations known — Zeus in disguise carrying Europa across the sea, with the Seven Sisters of the Pleiades riding its back."},
+{id:"gem",name:"Gemini",season:"Winter",
+ stars:[["Pollux",7.755,28.026,1.14],["Castor",7.577,31.888,1.58],["Alhena",6.629,16.399,1.93],["Wasat",7.335,21.982,3.53],["Mebsuta",6.732,25.131,3.06],["Tejat",6.383,22.514,2.87],["Propus",6.248,22.507,3.31],["κ Gem",7.741,24.398,3.57],["τ Gem",7.186,30.245,4.42],["Alzirr",6.754,12.896,3.35]],
+ lines:[[1,8],[8,4],[4,5],[5,6],[0,7],[0,3],[3,2],[2,9]],
+ guide:["Pollux","Castor","Alhena"],
+ spotting:"Two bright stars side by side — Castor and Pollux — mark the twins' heads, with two roughly parallel star chains stretching toward Orion for their bodies.",
+ lore:"The inseparable twins of Greek myth. When mortal Castor was killed, Pollux shared his immortality so the brothers could stay together, half in the heavens, half below."},
+{id:"leo",name:"Leo",season:"Spring",
+ stars:[["Regulus",10.139,11.967,1.35],["Denebola",11.818,14.572,2.14],["Algieba",10.333,19.842,2.28],["Zosma",11.235,20.524,2.56],["Chertan",11.237,15.430,3.34],["η Leo",10.122,16.763,3.51],["Adhafera",10.278,23.417,3.44],["Rasalas",9.879,26.007,3.88],["ε Leo",9.764,23.774,2.98]],
+ lines:[[0,5],[5,2],[2,6],[6,7],[7,8],[2,3],[3,1],[1,4],[4,3],[4,0]],
+ guide:["Regulus","Denebola","Algieba"],
+ spotting:"Look for a backwards question mark — the Sickle — with bright Regulus as its period. That's the lion's head and mane; a triangle to the east marks the hindquarters.",
+ lore:"The Nemean Lion, whose hide no weapon could pierce, slain by Heracles as the first of his twelve labors and lifted into the spring sky."},
+{id:"peg",name:"Pegasus",season:"Autumn",
+ stars:[["Markab",23.079,15.205,2.49],["Scheat",23.063,28.083,2.42],["Algenib",0.220,15.184,2.83],["Alpheratz",0.140,29.091,2.06],["Enif",21.736,9.875,2.39],["Homam",22.691,10.831,3.41],["Matar",22.717,30.221,2.94]],
+ lines:[[0,1],[1,3],[3,2],[2,0],[0,5],[5,4],[1,6]],
+ guide:["Markab","Scheat","Enif"],
+ spotting:"Find the Great Square — four moderately bright stars framing a strikingly empty patch of sky. The horse flies upside down, with Enif marking its muzzle.",
+ lore:"The winged horse sprung from Medusa, tamed by Bellerophon. Only the front half is drawn in the sky — the rest is left to the imagination."},
+{id:"and",name:"Andromeda",season:"Autumn",
+ stars:[["Alpheratz",0.140,29.091,2.06],["Mirach",1.162,35.621,2.05],["Almach",2.065,42.330,2.26],["δ And",0.656,30.861,3.27],["μ And",0.946,38.500,3.87],["51 And",1.633,48.628,3.57]],
+ lines:[[0,3],[3,1],[1,2],[1,4],[2,5]],
+ guide:["Alpheratz","Mirach","Almach"],
+ spotting:"Two star chains stream from the corner of the Great Square. Hop from Mirach two stars up and slightly right: the faint smudge there is the Andromeda Galaxy, 2.5 million light-years away.",
+ lore:"The chained princess, offered to a sea monster to pay for her mother Cassiopeia's vanity, rescued by Perseus. Her constellation holds the farthest thing the naked eye can see."},
+{id:"cma",name:"Canis Major",season:"Winter",
+ stars:[["Sirius",6.752,-16.716,-1.46],["Mirzam",6.378,-17.956,1.98],["Adhara",6.977,-28.972,1.50],["Wezen",7.140,-26.393,1.84],["Aludra",7.401,-29.303,2.45],["Muliphein",7.063,-15.633,4.11]],
+ lines:[[0,1],[0,3],[3,2],[3,4],[0,5]],
+ guide:["Sirius","Adhara","Wezen"],
+ spotting:"Follow Orion's Belt down and left to Sirius, the brightest star in the entire night sky. It flashes and glitters near the horizon — that's the atmosphere, not the star.",
+ lore:"The Great Dog, faithful companion at Orion's heel. Sirius's dawn rising once marked the flooding of the Nile — and gave us the phrase 'dog days' of summer."},
+{id:"boo",name:"Boötes",season:"Spring",
+ stars:[["Arcturus",14.261,19.182,-0.05],["Izar",14.749,27.074,2.37],["Muphrid",13.911,18.398,2.68],["Seginus",14.535,38.308,3.03],["Nekkar",15.032,40.390,3.49],["δ Boo",15.258,33.315,3.47],["ρ Boo",14.530,30.371,3.58],["ζ Boo",14.685,13.729,3.78]],
+ lines:[[0,1],[1,5],[5,4],[4,3],[3,6],[6,0],[0,2],[0,7]],
+ guide:["Arcturus","Izar"],
+ spotting:"Follow the arc of the Big Dipper's handle away from the bowl — 'arc to Arcturus.' The orange giant anchors a tall kite of fainter stars.",
+ lore:"The Herdsman, driving the Great Bear around the pole through the night. Arcturus means 'guardian of the bear,' and it is the brightest star of the northern celestial hemisphere."},
+{id:"crb",name:"Corona Borealis",season:"Spring",
+ stars:[["Alphecca",15.578,26.715,2.23],["Nusakan",15.464,29.106,3.68],["θ CrB",15.549,31.359,4.14],["γ CrB",15.713,26.296,3.84],["δ CrB",15.826,26.068,4.63],["ε CrB",15.960,26.878,4.15],["ι CrB",16.024,29.851,4.99]],
+ lines:[[2,1],[1,0],[0,3],[3,4],[4,5],[5,6]],
+ guide:["Alphecca"],
+ spotting:"A small, perfect semicircle of stars between Arcturus and Hercules — a tiara resting on the spring sky, with Alphecca as its central jewel.",
+ lore:"The wedding crown of Ariadne, who saved Theseus from the labyrinth. Dionysus flung the crown into the sky so her kindness would never be forgotten."},
+{id:"her",name:"Hercules",season:"Summer",
+ stars:[["Kornephoros",16.504,21.490,2.78],["ζ Her",16.688,31.603,2.81],["η Her",16.715,38.922,3.48],["π Her",17.251,36.809,3.16],["ε Her",17.005,30.926,3.92],["Sarin",17.251,24.839,3.14],["Rasalgethi",17.244,14.390,3.06]],
+ lines:[[1,2],[2,3],[3,4],[4,1],[1,0],[4,5],[5,6],[0,6]],
+ guide:["Kornephoros","ζ Her"],
+ spotting:"Between Vega and Arcturus, look for the Keystone — a lopsided square of four medium stars. On its western edge sits M13, the finest globular cluster of the northern sky.",
+ lore:"The strongman kneels upside down in the sky, one foot on the head of Draco the dragon — resting, at last, after his twelve labors."}
+];
+
+/* ---------- astronomy engine ---------- */
+const jd = date => date.getTime()/86400000 + 2440587.5;
+const gmst = j => norm360(280.46061837 + 360.98564736629 * (j - 2451545.0));
+
+function altAz(raHours, decDeg, latDeg, lonDeg, date){
+  const lst = gmst(jd(date)) + lonDeg;                 // degrees
+  const H   = (norm360(lst - raHours*15)) * D2R;       // hour angle
+  const dec = decDeg*D2R, lat = latDeg*D2R;
+  const alt = Math.asin(Math.sin(dec)*Math.sin(lat) + Math.cos(dec)*Math.cos(lat)*Math.cos(H));
+  const az  = norm360(Math.atan2(Math.sin(H), Math.cos(H)*Math.sin(lat) - Math.tan(dec)*Math.cos(lat))*R2D + 180);
+  return {alt: alt*R2D, az};
+}
+
+function sunRaDec(j){ // low-precision solar position, good to ~0.01°
+  const n = j - 2451545.0;
+  const L = norm360(280.460 + 0.9856474*n);
+  const g = (357.528 + 0.9856003*n) * D2R;
+  const lam = (L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g)) * D2R;
+  const eps = 23.439 * D2R;
+  const ra = norm360(Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam))*R2D)/15;
+  const dec = Math.asin(Math.sin(eps)*Math.sin(lam))*R2D;
+  return {ra, dec};
+}
+
+function moonPhase(date){ // synodic approximation from the 2000-01-06 new moon
+  const age = ((jd(date) - 2451550.1) / 29.530588853) % 1;
+  const phase = age < 0 ? age + 1 : age;
+  const illum = Math.round((1 - Math.cos(2*Math.PI*phase))/2 * 100);
+  const names = ["New moon","Waxing crescent","First quarter","Waxing gibbous","Full moon","Waning gibbous","Last quarter","Waning crescent"];
+  const glyphs = ["●","☽","◐","◑","○","◒","◓","☾"];
+  const idx = Math.round(phase*8) % 8;
+  return {name: names[idx], glyph: glyphs[idx], illum};
+}
+
+/* anchor point of a constellation = spherical centroid of its stars */
+function anchor(c){
+  let x=0,y=0,z=0;
+  for (const [,ra,dec] of c.stars){
+    const a = ra*15*D2R, d = dec*D2R;
+    x += Math.cos(d)*Math.cos(a); y += Math.cos(d)*Math.sin(a); z += Math.sin(d);
+  }
+  const ra = norm360(Math.atan2(y,x)*R2D)/15;
+  const dec = Math.asin(z/Math.hypot(x,y,z))*R2D;
+  return {ra, dec};
+}
+
+const DIRECTIONS = [["N","north"],["NE","northeast"],["E","east"],["SE","southeast"],["S","south"],["SW","southwest"],["W","west"],["NW","northwest"]];
+const compass = az => DIRECTIONS[Math.round(az/45) % 8];
+
+function difficulty(alt, brightestMag){
+  if ((brightestMag <= 1.3 && alt >= 30) || (brightestMag <= 2.3 && alt >= 50)) return "easy";
+  if (brightestMag >= 2.7 || alt < 30) return "hard";
+  return "moderate";
+}
+
+/* sample the night sky: half-hour steps from 5 pm to 8 am next day,
+   keeping only samples where the sun is below -9° (true darkness)   */
+function nightSamples(dateStr, lat, lon, windowSel){
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const samples = [];
+  for (let step = 0; step <= 30; step++){
+    const t = new Date(y, m-1, d, 17, step*30);
+    const sun = sunRaDec(jd(t));
+    if (altAz(sun.ra, sun.dec, lat, lon, t).alt > -9) continue;
+    const h = t.getHours() + t.getMinutes()/60;
+    const sameDay = t.getDate() === d;
+    if (windowSel === "evening" && !(sameDay && h >= 17)) continue;
+    if (windowSel === "late"    && !(h >= 23 || h < 3)) continue;
+    if (windowSel === "predawn" && (sameDay || h < 2 || h > 8)) continue;
+    samples.push(t);
+  }
+  return samples;
+}
+
+function chartSky(dateStr, lat, lon, windowSel){
+  const dark = nightSamples(dateStr, lat, lon, "all");
+  const samples = windowSel === "all" ? dark : nightSamples(dateStr, lat, lon, windowSel);
+  const visible = [], hidden = [];
+  for (const c of CONSTELLATIONS){
+    // anchor on the guide stars — the parts of the figure you actually spot —
+    // so long constellations like Scorpius aren't sunk by a low tail
+    const anchors = c.stars.filter(s => c.guide.includes(s[0]));
+    let best = null;
+    for (const t of samples)
+      for (const [,ra,dec] of anchors){
+        const pos = altAz(ra, dec, lat, lon, t);
+        if (!best || pos.alt > best.alt) best = {...pos, time: t};
+      }
+    if (best && best.alt >= 20){
+      const brightest = Math.min(...c.stars.map(s => s[3]));
+      visible.push({c, ...best, dir: compass(best.az), diff: difficulty(best.alt, brightest)});
+    } else hidden.push(c);
+  }
+  visible.sort((p,q) => q.alt - p.alt);
+  return {visible, hidden, dark};
+}
+
+/* ---------- SVG atlas plates ---------- */
+function mulberry32(seed){
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const hashStr = s => [...s].reduce((h,ch) => Math.imul(h,31) + ch.charCodeAt(0) | 0, 7);
+
+/* orthographic projection about the constellation centroid; east at left, as seen looking up */
+function projectStars(c, w, h, pad){
+  const a = anchor(c);
+  const ra0 = a.ra*15*D2R, dec0 = a.dec*D2R;
+  const pts = c.stars.map(([,ra,dec]) => {
+    const dA = ra*15*D2R - ra0, d = dec*D2R;
+    return {
+      x: -Math.cos(d)*Math.sin(dA),
+      y:  Math.cos(dec0)*Math.sin(d) - Math.sin(dec0)*Math.cos(d)*Math.cos(dA)
+    };
+  });
+  const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const scale = Math.min((w-2*pad)/Math.max(maxX-minX,1e-6), (h-2*pad)/Math.max(maxY-minY,1e-6));
+  return pts.map(p => ({
+    x: w/2 + (p.x - (minX+maxX)/2)*scale,
+    y: h/2 - (p.y - (minY+maxY)/2)*scale
+  }));
+}
+
+function plateSVG(c, {w=560, h=470, labels=true, frame=true} = {}){
+  const pad = frame ? 84 : 40;
+  const pts = projectStars(c, w, h, pad);
+  const rand = mulberry32(hashStr(c.id));
+  const uid = c.id + (frame ? "F" : "m");
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Star chart of ${c.name}">`;
+  s += `<defs><filter id="g${uid}" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  s += `<rect width="${w}" height="${h}" fill="#0d0d22"/>`;
+  for (let i=0;i<90;i++){ // field stars, deterministic per plate
+    const fx=(rand()*w).toFixed(1), fy=(rand()*h).toFixed(1), fr=(rand()*.9+.3).toFixed(2), fo=(rand()*.5+.12).toFixed(2);
+    s += `<circle cx="${fx}" cy="${fy}" r="${fr}" fill="#aebbe8" opacity="${fo}"/>`;
+  }
+  for (const [i,j] of c.lines)
+    s += `<line x1="${pts[i].x.toFixed(1)}" y1="${pts[i].y.toFixed(1)}" x2="${pts[j].x.toFixed(1)}" y2="${pts[j].y.toFixed(1)}" stroke="#8fb8ff" stroke-opacity=".55" stroke-width="1.2"/>`;
+  c.stars.forEach(([name,,,mag], i) => {
+    const r = Math.max(1.6, Math.min(7, 5.4 - mag)) * (frame ? 1 : .85);
+    s += `<circle cx="${pts[i].x.toFixed(1)}" cy="${pts[i].y.toFixed(1)}" r="${r.toFixed(1)}" fill="#eaf1ff" filter="url(#g${uid})"/>`;
+    if (labels && c.guide.includes(name)){
+      const tx = pts[i].x + r + 7, anchorAttr = tx > w-95 ? `x="${(pts[i].x - r - 7).toFixed(1)}" text-anchor="end"` : `x="${tx.toFixed(1)}"`;
+      s += `<text ${anchorAttr} y="${(pts[i].y+4).toFixed(1)}" fill="#9aa3c7" font-family="'IBM Plex Mono',monospace" font-size="11" letter-spacing="1.5">${name.toUpperCase()}</text>`;
+    }
+  });
+  if (frame){
+    const a = anchor(c);
+    const roman = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII"];
+    const num = roman[CONSTELLATIONS.indexOf(c)] || "";
+    s += `<rect x="14" y="14" width="${w-28}" height="${h-28}" fill="none" stroke="#8fb8ff" stroke-opacity=".3"/>`;
+    s += `<rect x="20" y="20" width="${w-40}" height="${h-40}" fill="none" stroke="#8fb8ff" stroke-opacity=".14"/>`;
+    s += `<text x="${w/2}" y="46" text-anchor="middle" fill="#a08fd0" font-family="'IBM Plex Mono',monospace" font-size="10" letter-spacing="4">PLATE ${num} · ${c.season.toUpperCase()}</text>`;
+    s += `<text x="${w/2}" y="${h-32}" text-anchor="middle" fill="#9aa3c7" font-family="'IBM Plex Mono',monospace" font-size="11" letter-spacing="3">RA ${a.ra.toFixed(1)}ʰ · DEC ${a.dec >= 0 ? "+" : "−"}${Math.abs(a.dec).toFixed(0)}°</text>`;
+  }
+  return s + `</svg>`;
+}
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+const fmtTime = d => d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+let lastResults = null;
+
+function renderConditions(dateStr, dark){
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const moon = moonPhase(new Date(y, m-1, d, 23, 0));
+  const box = $("conditions");
+  let html = "";
+  if (placeLabel) html += `<span class="cond-chip">✶ ${placeLabel}</span>`;
+  html += `<span class="cond-chip"><span class="moon-glyph">${moon.glyph}</span> ${moon.name} · ${moon.illum}% lit</span>`;
+  if (dark.length)
+    html += `<span class="cond-chip">True darkness ${fmtTime(dark[0])} – ${fmtTime(dark[dark.length-1])}</span>`;
+  if (moon.illum > 60)
+    html += `<span class="moon-warning">A bright moon will wash out fainter stars tonight — favor the boldest patterns.</span>`;
+  box.innerHTML = html;
+  box.classList.add("show");
+}
+
+function renderResults(res){
+  lastResults = res;
+  const grid = $("grid"), empty = $("emptyState");
+  grid.innerHTML = "";
+  if (!res.dark.length){
+    empty.style.display = "block";
+    empty.textContent = "The sun barely sets at this location on this date — no true darkness for stargazing.";
+    $("resultsCount").textContent = ""; $("hiddenList").textContent = "";
+    return;
+  }
+  empty.style.display = res.visible.length ? "none" : "block";
+  if (!res.visible.length) empty.textContent = "Nothing climbs high enough in that window — try widening it to all night.";
+  $("resultsCount").textContent = `${res.visible.length} of ${CONSTELLATIONS.length} above 20°`;
+
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  res.visible.forEach((v, i) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "card" + (reduce ? "" : " reveal");
+    if (!reduce) card.style.animationDelay = `${Math.min(i*60, 500)}ms`;
+    card.innerHTML = `
+      <span class="card-chart" aria-hidden="true">${plateSVG(v.c, {w:340, h:170, labels:false, frame:false})}</span>
+      <span class="card-body">
+        <h3>${v.c.name} <span class="chip ${v.diff}">${v.diff}</span></h3>
+        <span class="card-data">BEST <span class="at">${fmtTime(v.time)}</span> · ${v.dir[0]} · ALT ${Math.round(v.alt)}°</span>
+        <span class="card-spot">${v.c.spotting.split(". ")[0].replace(/\.?$/,".")}</span>
+        <span class="card-more">View plate →</span>
+      </span>`;
+    card.addEventListener("click", () => openPlate(v));
+    grid.appendChild(card);
+  });
+
+  $("hiddenList").innerHTML = res.hidden.length
+    ? `<b>Below the horizon or too low tonight:</b> ${res.hidden.map(c=>c.name).join(", ")}.`
+    : "";
+}
+
+function openPlate(v){
+  $("plateFigure").innerHTML = plateSVG(v.c);
+  $("plateDetails").innerHTML = `
+    <p class="plate-no">Plate ${["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII"][CONSTELLATIONS.indexOf(v.c)]} · best in ${v.c.season}</p>
+    <h3 id="plateName">${v.c.name}</h3>
+    <div class="plate-stats">
+      <span class="k">Best time</span><span class="k">Direction</span><span class="k">Altitude</span>
+      <span class="v time">${fmtTime(v.time)}</span><span class="v">${v.dir[1]}</span><span class="v">${Math.round(v.alt)}°</span>
+    </div>
+    <div class="plate-sec"><span class="k">Difficulty</span><span class="chip ${v.diff}">${v.diff}</span></div>
+    <div class="plate-sec"><span class="k">Guide stars</span><div class="guide-stars">${v.c.guide.map(g=>`<span>${g}</span>`).join("")}</div></div>
+    <div class="plate-sec"><span class="k">How to spot it</span><p>${v.c.spotting}</p></div>
+    <div class="plate-sec lore"><span class="k">Lore</span><p>${v.c.lore}</p></div>`;
+  $("plateModal").showModal();
+}
+
+$("plateClose").addEventListener("click", () => $("plateModal").close());
+$("plateModal").addEventListener("click", e => { if (e.target === $("plateModal")) $("plateModal").close(); });
+
+/* ---- place-name lookup (Open-Meteo geocoder — free, no API key) ---- */
+let placeLabel = "", placeDebounce;
+async function geocode(q, count = 5){
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=${count}&language=en&format=json`);
+  if (!r.ok) throw new Error("geocoder unavailable");
+  return (await r.json()).results || [];
+}
+const placeMeta = p => [p.admin1, p.country].filter(Boolean).join(", ");
+function pickPlace(p){
+  $("lat").value = p.latitude.toFixed(3);
+  $("lon").value = p.longitude.toFixed(3);
+  placeLabel = [p.name, placeMeta(p)].filter(Boolean).join(", ");
+  $("place").value = placeLabel;
+  closeSuggestions();
+}
+function closeSuggestions(){ $("suggestions").classList.remove("show"); $("suggestions").innerHTML = ""; }
+
+$("place").addEventListener("input", () => {
+  placeLabel = "";
+  clearTimeout(placeDebounce);
+  const q = $("place").value.trim();
+  if (q.length < 2){ closeSuggestions(); return; }
+  placeDebounce = setTimeout(async () => {
+    try {
+      const results = await geocode(q);
+      const box = $("suggestions");
+      box.innerHTML = "";
+      for (const p of results){
+        const b = document.createElement("button");
+        b.type = "button"; b.setAttribute("role","option");
+        b.textContent = p.name;
+        const meta = document.createElement("span");
+        meta.className = "meta"; meta.textContent = placeMeta(p);
+        b.appendChild(meta);
+        b.addEventListener("click", () => pickPlace(p));
+        box.appendChild(b);
+      }
+      box.classList.toggle("show", results.length > 0);
+    } catch { closeSuggestions(); }
+  }, 350);
+});
+$("place").addEventListener("keydown", e => { if (e.key === "Escape") closeSuggestions(); });
+document.addEventListener("click", e => { if (!e.target.closest(".field.place")) closeSuggestions(); });
+
+$("obsForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("formError");
+  err.classList.remove("show");
+  const dateStr = $("date").value, q = $("place").value.trim();
+  let lat = parseFloat($("lat").value), lon = parseFloat($("lon").value);
+  if ((Number.isNaN(lat) || Number.isNaN(lon)) && q){
+    try {
+      const results = await geocode(q, 1);
+      if (!results.length){
+        err.textContent = `No place matching “${q}” was found — try a nearby larger town, or enter coordinates directly.`;
+        err.classList.add("show"); return;
+      }
+      pickPlace(results[0]);
+      lat = results[0].latitude; lon = results[0].longitude;
+    } catch {
+      err.textContent = "The place-name service couldn't be reached — enter latitude and longitude directly.";
+      err.classList.add("show"); return;
+    }
+  }
+  if (!dateStr || Number.isNaN(lat) || Number.isNaN(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180){
+    err.textContent = "A date plus a location — a place name, or latitude −90…90 and longitude −180…180 — are needed to chart the sky.";
+    err.classList.add("show");
+    return;
+  }
+  localStorage.setItem("starseeker-loc", JSON.stringify({lat, lon, label: placeLabel}));
+  const res = chartSky(dateStr, lat, lon, $("window").value);
+  renderConditions(dateStr, res.dark);
+  renderResults(res);
+  $("results-section").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+});
+
+$("geoBtn").addEventListener("click", () => {
+  const err = $("formError");
+  if (!navigator.geolocation){ err.textContent = "This browser can't share your location — enter latitude and longitude by hand."; err.classList.add("show"); return; }
+  $("geoBtn").textContent = "Locating…";
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      $("lat").value = pos.coords.latitude.toFixed(3);
+      $("lon").value = pos.coords.longitude.toFixed(3);
+      placeLabel = "your location";
+      $("place").value = "";
+      $("geoBtn").textContent = "Use my location";
+      err.classList.remove("show");
+    },
+    () => {
+      $("geoBtn").textContent = "Use my location";
+      err.textContent = "Location was declined or unavailable — enter latitude and longitude by hand.";
+      err.classList.add("show");
+    });
+});
+
+/* defaults: today's date, last-used location */
+(function init(){
+  const now = new Date();
+  $("date").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  try {
+    const saved = JSON.parse(localStorage.getItem("starseeker-loc"));
+    if (saved){
+      $("lat").value = saved.lat; $("lon").value = saved.lon;
+      if (saved.label){ placeLabel = saved.label; $("place").value = saved.label; }
+    }
+  } catch {}
+})();
+
+/* ambient starfield behind the page */
+(function starfield(){
+  const cv = $("starfield"), ctx = cv.getContext("2d");
+  function paint(){
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = innerWidth*dpr; cv.height = innerHeight*dpr;
+    cv.style.width = innerWidth+"px"; cv.style.height = innerHeight+"px";
+    ctx.scale(dpr, dpr);
+    const rand = mulberry32(20260702);
+    for (let i=0;i<Math.round(innerWidth*innerHeight/4500);i++){
+      ctx.globalAlpha = rand()*.5 + .08;
+      ctx.fillStyle = rand() > .85 ? "#a08fd0" : "#aebbe8";
+      const r = rand()*1.1 + .2;
+      ctx.beginPath(); ctx.arc(rand()*innerWidth, rand()*innerHeight, r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  paint();
+  let tmr; addEventListener("resize", () => { clearTimeout(tmr); tmr = setTimeout(paint, 150); });
+})();
+</script>
+</body>
+</html>
